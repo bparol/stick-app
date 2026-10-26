@@ -4,6 +4,15 @@ Stick helps people rotate through their interests with one daily focus.
 Read README.md and development-notes.md before working. Keep confirmed
 requirements separate from proposed product choices.
 
+Keep README.md focused on setup, architecture, functionality, tests, and
+technical limitations. Do not include timelines, delivery milestones, decision
+history, learning assessments, blog plans, or review workflow in the README.
+
+Render the illustrated world with SpriteKit beneath native SwiftUI controls.
+Keep app state and navigation outside the scene. The transition to Focus Flower
+is daily usability with ordered interests, a stable daily topic, an animated
+home scene, and one reminder; blog publication and App Store release can follow.
+
 ## Pair programming and review
 
 Use pair programming and small, self-contained increments. Before coding,
