@@ -1,6 +1,176 @@
 # Stick development notes
 
-## Current increment — scrolling sky
+## Current increment — reference-styled daily card
+
+Date: 2026-10-27. User requested implementation on the current branch:
+`feature/home-header/00-base` (starting at `b26b61c`); no new iteration branch.
+Approach: **implementation-first**, accepted by the user. Test selection:
+cover the check-in button, retain existing navigation checks, and review card
+appearance/fixed font sizes visually. Approved with `pp_to_main` on 2026-10-27;
+merged into main after a tree-preserving squash. Nothing pushed.
+
+Outcome: warm ivory card with rounded corners and a soft shadow, dark-green
+introductory text, bold rounded Photography placeholder, supporting text,
+and a sage capsule button based on `Resources/base_design.jpeg`. Card text uses
+fixed point sizes with no automatic scaling or shrinking. The design's check
+is initially hidden and appears only after tapping “I spent some time”.
+Another tap leaves it checked. Space for the icon is reserved to avoid a jump.
+
+Interface: `DailyFocusCard` takes a binding to `AppModel.hasCheckedIn` through
+HomeView. The model owns the acknowledgement for the current app run, including
+navigation away from Home. This is presentation state, not saved daily history;
+there is no persistence, daily reset, interest editing, or rotation yet.
+SwiftUI retains interaction and accessibility while SpriteKit owns scenery.
+Only the card's fonts are fixed; header typography is unchanged.
+
+Main tradeoff: model-owned in-memory state survives card/view recreation and
+Settings navigation, while deliberately stopping short of saved daily check-ins.
+Reuses the existing Observation owner and binding-based native interface.
+All implementation progress and review state stay in this app's notes.
+
+PR description: Replace the placeholder Home box with the reference's ivory
+daily-focus card, fixed-size green typography, and sage check-in button. Show
+the check only after a tap and preserve it through navigation during the app run.
+Validate unchecked → checked behavior, repeated taps, and Settings return;
+review default and large-text simulator screenshots for the fixed card layout.
+Photography remains placeholder content and the acknowledgement is not persisted.
+
+Validation: Tuist generation passed. `/tmp/stick-daily-card-final.xcresult`
+passed 24 unit tests and 3 UI tests on iPhone 17 Pro / iOS 26.3 Simulator.
+The new UI test verifies initial unchecked state, checked state after tapping,
+repeated taps remaining checked, and checked state after Settings return.
+Inspected before/after screenshots and largest accessibility text size in
+`/tmp/stick-daily-card-final-attachments/`; card typography/layout stays fixed.
+Visual review moved the shadow onto the background shape to avoid shadowing
+the card contents. Final whitespace checks passed. Only the existing App Intents
+metadata-extraction warnings appeared. No physical-device validation.
+
+References: [SwiftUI font](https://developer.apple.com/documentation/SwiftUI/Font)
+and [managing interface state](https://developer.apple.com/documentation/swiftui/managing-user-interface-state).
+
+### Home-header feature approval — 2026-10-27
+
+User approved the completed feature with `pp_to_main`, including the reference
+card and current app instructions. Approved source commits (oldest first):
+
+- `b26b61ca9d3cbe79767ee23bd1bd66deb493886e` Style home header with a green wordmark and twig logo
+- `9190f00b59e798e954bb75c1e13ecad9956b7004` Style the daily focus card and add tap-to-check feedback
+- `179fc74cde30f6e3a3ff447c81689ab74a83196b` Update Agents.md
+
+The final squash flattens the first commit's retained titles and preserves every
+original title in chronological order. The approved tree is unchanged except
+for this approval record; the checks above still apply. Delete only the
+home-header base after successful fast-forward and ancestry verification.
+The drop-animation planning base remains separate. The rejected white halo is
+not included. No hub files, hub submodule pointer, commits, or pushes are updated.
+
+## Previous increment — home-header branding
+
+Date: 2026-10-26. Approach: **implementation-first**, chosen by the user.
+Base: `feature/home-header/00-base` at approved main `5bd4c0e`.
+Iteration: `feature/home-header/style-branding`. Approved with `to_base` on
+2026-10-27; merged into `feature/home-header/00-base` after a tree-preserving
+squash. The iteration branch is deleted after the verified fast-forward.
+The approved drop-animation plan remains on its separate feature base.
+
+Outcome: reference-inspired forest-green lowercase wordmark with a brown twig
+and small green leaf, paired with a plain muted-green outlined gear. The header
+sits within Home's top safe area. Settings retains native navigation and Back.
+`Resources/base_design.jpeg` is retained as the design reference, copied from
+the approved drop-animation base; it is not bundled in the app.
+
+Interface: `StickWordmark` owns native text and vector twig paths. `HomeHeader`
+owns the Settings NavigationLink; SpriteKit continues to own the scenery. The vector
+twig stays sharp at different sizes. SF Rounded approximates the reference's
+lettering. Branding scales only through xxxLarge so it leaves room for the gear.
+VoiceOver sees one “Stick” heading and a named Settings control; the gear has a
+44-point target. No bitmap generation or third-party font is needed.
+
+Learning goal: explain native header ownership and navigation-bar visibility,
+reusing SwiftUI environment, typed navigation, and the existing scene boundary.
+Hub note: `notes/b-modern-ios/auto/swiftui-home-header.md`. User explanation
+pending; implementation and test results do not establish mastery.
+
+Checks: Tuist generation passed. Final `/tmp/stick-header-final.xcresult`
+passed 19 unit tests and 2 UI tests on iPhone 17 Pro / iOS 26.3 Simulator.
+UI tests cover repeated Settings round trips, accessible labels, target size,
+alignment, no horizontal header overflow, and largest accessibility text size.
+Hub practice `swift test` separately passed 12 tests. Whitespace checks passed.
+Default-size simulator artwork/header inspected in the exported screenshots;
+final attachments are under `/tmp/stick-header-final-attachments/`.
+Only App Intents metadata-extraction warnings appeared in the final build.
+
+Limits: exact painted lettering is approximated; the rest of Home's design and
+bottom card are outside this increment. No device, energy, or performance
+claim. Largest-text bottom-card layout is not addressed by the header check.
+
+PR description: Replace Home's system title and toolbar styling with the design's
+green wordmark, custom vector twig, and outlined Settings gear. Keep a named
+44-point Settings target and native Settings navigation. Validate header labels,
+layout, large-text behavior, rendering, and repeated navigation on the simulator.
+Iteration review approved; merging the feature into main needs separate approval.
+Nothing pushed.
+
+### Sky-aligned tint revision — 2026-10-27
+
+User requested darker greens against a bright sky and lighter greens as the sky
+darkens, explicitly preserving each current color at full brightness.
+Implementation-first continues on the same iteration; the feature base stays
+unchanged. Wordmark day RGB: (0.20, 0.35, 0.23); settings day RGB:
+(0.32, 0.41, 0.27). Both blend toward muted sage (0.50, 0.65, 0.42).
+User found the first lighter endpoint too light; the final endpoint is subdued.
+Twig artwork keeps its brown and leaf colors.
+
+`SkyIllumination.headerDarkness` uses the existing 32-position visible-width
+brightness average, normalizes between day-center and night-center brightness,
+clamps, and smoothsteps. It follows painted night brightness too; it does not
+use the landscape's full-night shadow policy. Flat/reversed center contrast
+keeps the original daytime colors. These are encoded RGB artwork averages,
+not physical illumination or an accessibility-contrast guarantee.
+
+MeadowScene updates one retained observable `SkyAppearance` as it positions the
+sky, including resize. Only HomeHeader reads its changing darkness value;
+there is no separate timer, callback capture, or additional animation clock.
+Pause/resume inherits scene timing. This reuses Observation, ownership,
+visible-window sampling, and existing lifecycle behavior.
+
+Revision PR description: Keep the exact original daytime wordmark and gear
+greens, blending both toward muted sage as measured visible sky brightness
+falls. Share the scene's timing and retain native Settings navigation. Validate
+day/night/midpoint colors, brightness fixtures, joins/wraps, resize, and pause.
+Both header commits are approved for the feature base. Nothing pushed.
+
+Revision checks: Tuist generation passed. `/tmp/stick-header-tint-muted.xcresult`
+passed 24 unit tests and 2 UI tests on the same iPhone 17 Pro simulator; practice
+`swift test` passed 12. Tests cover exact original day colors, muted night and
+intermediate colors, different brightness at the same progress, flat profiles,
+visible joins and circuit wrap, scene resize, and pause/resume. Whitespace checks
+passed; only the existing App Intents metadata warnings appeared. A prior run's
+navigation check was interrupted by a manual app relaunch; the clean rerun and
+final muted-color run both passed. No production fix was needed for that run.
+
+Live visual check: `/tmp/stick-header-tint-day.png`,
+`/tmp/stick-header-tint-dusk.png`, and `/tmp/stick-header-tint-night-review.png`
+show the actual sky and header transitioning together with the final muted tint.
+The long-running simulator captures also showed missing glyphs in the unchanged
+bottom card. Cause and whether this predates the tint revision are unverified;
+the short navigation/rendering tests do not cover this artifact. Record it for
+follow-up; do not treat these captures as a clean whole-screen visual pass.
+
+### Iteration approval — 2026-10-27
+
+User explicitly approved `to_base`. Approved original implementation commits:
+
+- `40411ff403103ffade8fdc21539b7bf1661b597f` Style home header with a green wordmark and twig logo
+- `950689f941f28c6ed7ad49a09aa43f7e436fb7bf` Align home header greens with measured sky brightness
+
+The squash retains the reviewed source tree and all original commit titles,
+including approval bookkeeping. Existing passing checks above apply unchanged.
+The unrelated working edit to AGENTS.md is excluded and preserved. Bottom-card
+rendering follow-up and the user's learning explanation remain pending;
+merge approval does not establish mastery. No main merge or push authorized.
+
+## Previous increment — scrolling sky
 
 Date: 2026-10-26. Approach: **TDD**, explicitly chosen by the user.
 Base: `feature/app-shell/00-base` at `b3dfad9` (current checkout already contains

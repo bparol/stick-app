@@ -15,7 +15,8 @@ An iPhone app for making time for several interests through one daily focus.
 ## Implemented functionality
 
 - Home screen with a SpriteKit meadow beneath native SwiftUI controls.
-- A daily-focus card with placeholder content.
+- An ivory daily-focus card with placeholder Photography content, fixed font
+  sizes, and a check-in button that stays checked for the current app run.
 - Settings screen with native Back navigation.
 - The visual scene keeps its state across navigation and pauses its simulation
   when the app is inactive or Settings covers Home.
@@ -32,7 +33,7 @@ Shadow opacity follows measured sky brightness through dusk and dawn, reaching
 full strength at day end and staying full throughout night. Transparent sky
 areas remain unshaded.
 Interest editing, daily
-rotation, persistence, notifications, and check-ins are not implemented.
+rotation, persistence, notifications, and saved daily check-ins are not implemented.
 
 ## Architecture
 

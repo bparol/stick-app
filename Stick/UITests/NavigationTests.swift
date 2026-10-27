@@ -3,11 +3,38 @@ import CoreGraphics
 
 @MainActor
 final class NavigationTests: XCTestCase {
+    func testDailyCheckInStaysCheckedAfterTappingAndReturningFromSettings() {
+        let app = XCUIApplication()
+        app.launch()
+
+        let checkIn = app.buttons["daily-check-in"]
+        XCTAssertTrue(checkIn.waitForExistence(timeout: 10))
+        XCTAssertEqual(checkIn.value as? String, "Not checked")
+        XCTAssertFalse(checkIn.isSelected)
+        keepScreenshot(of: app, name: "Daily card before check-in")
+
+        checkIn.tap()
+        XCTAssertEqual(checkIn.value as? String, "Checked")
+        XCTAssertTrue(checkIn.isSelected)
+        keepScreenshot(of: app, name: "Daily card after check-in")
+
+        // This is an acknowledgement, so another tap must not undo it.
+        checkIn.tap()
+        XCTAssertTrue(checkIn.isSelected)
+        app.buttons["open-settings"].tap()
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
+        app.navigationBars["Settings"].buttons.element(boundBy: 0).tap()
+        XCTAssertTrue(checkIn.waitForExistence(timeout: 5))
+        XCTAssertTrue(checkIn.isSelected)
+        XCTAssertEqual(checkIn.value as? String, "Checked")
+    }
+
     func testSettingsRoundTrip() {
         let app = XCUIApplication()
         app.launch()
 
         XCTAssertTrue(app.staticTexts["Today you stick to:"].waitForExistence(timeout: 10))
+        assertHomeHeader(in: app)
         assertWorldRenders(in: app)
         app.buttons["open-settings"].tap()
         XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
@@ -20,8 +47,45 @@ final class NavigationTests: XCTestCase {
         app.buttons["open-settings"].tap()
         XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
         app.navigationBars["Settings"].buttons.element(boundBy: 0).tap()
-        XCTAssertTrue(app.navigationBars["Stick"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Today you stick to:"].waitForExistence(timeout: 5))
+        assertHomeHeader(in: app)
         assertWorldRenders(in: app)
+    }
+
+    func testHeaderAtLargestAccessibilityTextSize() {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL",
+        ]
+        app.launch()
+
+        XCTAssertTrue(app.staticTexts["Today you stick to:"].waitForExistence(timeout: 10))
+        assertHomeHeader(in: app)
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
+    private func assertHomeHeader(in app: XCUIApplication) {
+        let wordmark = app.staticTexts["stick-wordmark"]
+        let settings = app.buttons["open-settings"]
+        XCTAssertTrue(wordmark.exists)
+        XCTAssertEqual(wordmark.label, "Stick")
+        XCTAssertTrue(settings.isHittable)
+        XCTAssertEqual(settings.label, "Settings")
+        XCTAssertGreaterThanOrEqual(settings.frame.width, 44)
+        XCTAssertGreaterThanOrEqual(settings.frame.height, 44)
+        XCTAssertLessThan(wordmark.frame.maxX, settings.frame.minX)
+        XCTAssertLessThan(abs(wordmark.frame.midY - settings.frame.midY), 4)
+        XCTAssertGreaterThanOrEqual(wordmark.frame.minX, app.frame.minX)
+        XCTAssertLessThanOrEqual(settings.frame.maxX, app.frame.maxX)
+    }
+
+    private func keepScreenshot(of app: XCUIApplication, name: String) {
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
     }
 
     private func assertWorldRenders(in app: XCUIApplication) {

@@ -8,7 +8,8 @@ struct AppRootView: View {
         NavigationStack(path: $model.path) {
             HomeView(
                 scene: model.meadow,
-                isPaused: scenePhase != .active || !model.path.isEmpty
+                isPaused: scenePhase != .active || !model.path.isEmpty,
+                hasCheckedIn: $model.hasCheckedIn
             )
             .navigationDestination(for: AppRoute.self) { route in
                 switch route {

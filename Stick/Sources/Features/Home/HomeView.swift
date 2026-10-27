@@ -4,6 +4,7 @@ import SwiftUI
 struct HomeView: View {
     let scene: MeadowScene
     let isPaused: Bool
+    @Binding var hasCheckedIn: Bool
 
     var body: some View {
         SpriteView(scene: scene)
@@ -14,29 +15,15 @@ struct HomeView: View {
             }
             .ignoresSafeArea()
             .accessibilityHidden(true)
+            .safeAreaInset(edge: .top) {
+                HomeHeader(appearance: scene.appearance)
+            }
             .safeAreaInset(edge: .bottom) {
-                VStack(spacing: 12) {
-                    Text("Today you stick to:")
-                        .font(.headline)
-                    Text("A little time counts.")
-                        .font(.title2.bold())
-                    Text("Your interests will appear here.")
-                        .font(.subheadline)
-                }
-                .foregroundStyle(.primary)
-                .frame(maxWidth: .infinity)
-                .padding(24)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 28))
-                .padding()
+                DailyFocusCard(hasCheckedIn: $hasCheckedIn)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 16)
             }
             .navigationTitle("Stick")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink(value: AppRoute.settings) {
-                        Label("Settings", systemImage: "gearshape")
-                    }
-                    .accessibilityIdentifier("open-settings")
-                }
-            }
+            .toolbarVisibility(.hidden, for: .navigationBar)
     }
 }

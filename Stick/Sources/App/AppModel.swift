@@ -8,6 +8,7 @@ enum AppRoute: Hashable {
 @Observable
 final class AppModel {
     var path: [AppRoute] = []
+    var hasCheckedIn = false
 
     // Rendering state is not observable app data. Allocate it only on first use.
     @ObservationIgnored

@@ -13,44 +13,27 @@ Keep app state and navigation outside the scene. The transition to Focus Flower
 is daily usability with ordered interests, a stable daily topic, an animated
 home scene, and one reminder; blog publication and App Store release can follow.
 
-## Pair programming and review
-
-Use pair programming and small, self-contained increments. Before coding,
-agree with the user on one observable outcome, sketch the interface, discuss
-the main tradeoff, and set focused acceptance checks. Do not implement an
-entire feature autonomously while the user expects to pair. Explain unfamiliar
-behavior and pause at useful decisions for the user's reasoning.
-
-Group branches under feature/<feature-name>/. The base branch is
-feature/<feature-name>/00-base; iteration branches are
-feature/<feature-name>/<descriptive-name>, with iteration names starting
-with lowercase letters. Never use a bare feature/<feature-name> branch.
-
-Branch each iteration from the latest approved base. The agent writes the
-code, runs relevant checks, and makes a separate local iteration commit.
-Explain the change and checks, provide its branch and commit identifier,
-then stop for the user's explicit review in the conversation.
-
-Approval authorizes merging that iteration into its base. Merge before
-starting the next iteration. On rejection, revise and present it again or
-abandon it as directed; leave the base unchanged. Merging the completed
-feature into main requires separate user approval. Change the driver only
-when requested. Preserve unrelated changes. Never push without authorization.
-
-Keep the current increment, validation, limitations, and pending review in
-development-notes.md. Prepare a concise PR description covering the problem,
-resulting behavior, validation, and remaining limits.
+Keep current work, validation, limitations, and pending review state in
+`development-notes.md`. Preserve unrelated changes. Never push without
+authorization.
 
 ## Learning hub
 
 This public app is checked out at apps/stick-app in the private swifty-apple
-hub. Follow its AGENTS.md when working through that hub. Keep app and hub
-commits and pushes separate. After app approval and merge, update the hub's
-submodule pointer to the approved app commit.
+hub. Read hub instructions for context, but keep app work within this app
+repository. The only permitted writes outside it are automatic notes under
+the hub's `notes/<track>/auto/` directories.
+
+Do not update the hub's cycles, knowledge ledger, decision log, question log,
+app index, submodule pointer, or any other outer file as part of app work.
+Do not make hub commits for app approvals or merges. Keep implementation
+progress, decisions, validation, and review state in this app's development
+notes; automatic learning notes may use the permitted notes directories.
 
 For Swift/iOS learning work, finish with the user explaining the main
-decision and a failure case. Record assessed learning in the hub's current
-cycle and ledger; a completed PR alone does not establish mastery.
+decision and a failure case. Keep any learning observations in the app's
+development notes or permitted automatic notes; a completed PR alone does
+not establish mastery.
 
 Run checks relevant to changed behavior. Run Swift tests when Swift source,
 Swift tests, or Package.swift change. Verify Apple API claims against primary

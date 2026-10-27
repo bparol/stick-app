@@ -53,6 +53,17 @@ struct SkyIllumination: Decodable {
         return total / 32
     }
 
+    /// Actual visible light, normalized between the centers of day and night.
+    /// Unlike landscape shading, this follows painted brightness during night too.
+    func headerDarkness(at progress: Double, dayFraction: Double, visibleFraction: Double) -> Double {
+        let bright = meanBrightness(at: dayFraction / 2, dayFraction: dayFraction, visibleFraction: visibleFraction)
+        let dark = meanBrightness(at: dayFraction + (1 - dayFraction) / 2, dayFraction: dayFraction, visibleFraction: visibleFraction)
+        guard bright - dark > 0.000001 else { return 0 }
+        let light = meanBrightness(at: progress, dayFraction: dayFraction, visibleFraction: visibleFraction)
+        let t = min(1, max(0, (bright - light) / (bright - dark)))
+        return t * t * (3 - 2 * t)
+    }
+
     private func sample(_ profile: [Double], at position: Double) -> Double {
         let index = min(Double(profile.count - 1), max(0, position * Double(profile.count) - 0.5))
         let lower = Int(index)

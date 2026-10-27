@@ -4,6 +4,7 @@ import UIKit
 /// Two aspect-filled sky panels move left and alternate without allocating new nodes.
 @MainActor
 final class MeadowScene: SKScene {
+    let appearance = SkyAppearance()
     // About two minutes per image; one complete day/night circuit takes four minutes.
     let cycleDuration: TimeInterval = 240
     private let day = SKSpriteNode(imageNamed: "sky-day.png")
@@ -98,6 +99,13 @@ final class MeadowScene: SKScene {
             at: phase, dayFraction: Double(day.size.width / circuitWidth),
             visibleFraction: Double(size.width / circuitWidth)
         ))
+        let darkness = illumination.headerDarkness(
+            at: phase, dayFraction: Double(day.size.width / circuitWidth),
+            visibleFraction: Double(size.width / circuitWidth)
+        )
+        if appearance.darkness != darkness {
+            appearance.darkness = darkness
+        }
         for (sprite, start) in [(day, CGFloat.zero), (night, day.size.width)] {
             var x = size.width / 2 + start - offset
             // Recycle only after the panel's right edge clears the viewport.
