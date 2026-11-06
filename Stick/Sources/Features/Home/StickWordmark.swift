@@ -22,7 +22,7 @@ struct StickWordmark: View {
     }
 }
 
-private struct TwigMark: View {
+struct TwigMark: View {
     private let outline = Color(red: 0.31, green: 0.30, blue: 0.19)
 
     var body: some View {

@@ -58,11 +58,13 @@ def opacity(position, visible_fraction):
     contrast = center - edge
     t = ((center - brightness(p, visible_fraction)) / contrast
          if contrast > 0.000001 else abs(p * 2 - 0.5) * 2)
-    t = max(0, min(1, t))
+    measured = max(0, min(1, t))
+    daylight_distance = abs(p - 0.25) / 0.25
+    t = 0.8 * daylight_distance + 0.2 * measured
     return t * t * (3 - 2 * t)
 
-# Representative 390 x 844 portrait viewport, aspect-filled skies.
-visible_fraction = 390 / (2 * 844 * METADATA['day']['width'] / METADATA['day']['height'])
+# Representative 390 x 844 portrait viewport, with full images half the screen height.
+visible_fraction = 390 / (2 * (844 / 2) * METADATA['day']['width'] / METADATA['day']['height'])
 os.environ.setdefault('MPLCONFIGDIR', '/tmp/stick-illumination-matplotlib')
 import matplotlib
 matplotlib.use('Agg')

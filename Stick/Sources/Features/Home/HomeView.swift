@@ -4,7 +4,13 @@ import SwiftUI
 struct HomeView: View {
     let scene: MeadowScene
     let isPaused: Bool
-    @Binding var hasCheckedIn: Bool
+    let session: FocusSession?
+    let sessionStatus: SessionStatus
+    let summary: SessionSummary?
+    let domainName: String?
+    let onAddFirstDomain: () -> Void
+    let onToggleSession: () -> Void
+    let onStopSession: () -> Void
 
     var body: some View {
         SpriteView(scene: scene)
@@ -19,9 +25,23 @@ struct HomeView: View {
                 HomeHeader(appearance: scene.appearance)
             }
             .safeAreaInset(edge: .bottom) {
-                DailyFocusCard(hasCheckedIn: $hasCheckedIn)
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 16)
+                VStack(spacing: 12) {
+                    if let summary {
+                        Text("\(summary.domainName) · \(SessionTime.hoursMinutes(summary.totalSeconds)) total for \(summary.day)")
+                            .font(.callout)
+                            .multilineTextAlignment(.center)
+                            .padding(14)
+                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18))
+                            .accessibilityIdentifier("session-total-toast")
+                    }
+                    DailyFocusCard(
+                        domainName: domainName, session: session, sessionStatus: sessionStatus,
+                        isActive: !isPaused, onAddFirstDomain: onAddFirstDomain,
+                        onToggleSession: onToggleSession, onStopSession: onStopSession
+                    )
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
             }
             .navigationTitle("Stick")
             .toolbarVisibility(.hidden, for: .navigationBar)

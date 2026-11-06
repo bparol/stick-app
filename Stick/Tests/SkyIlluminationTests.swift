@@ -2,11 +2,29 @@ import Testing
 @testable import Stick
 
 struct SkyIlluminationTests {
+    @Test func dawnAndDuskSpreadTheShadeChangeAcrossDaylight() throws {
+        let map = try SkyIllumination.load()
+        let visible = 390.0 / (2 * (844 / 2) * 1584 / 672)
+        // At a 60-second cycle, three seconds into dawn must still be mostly dark.
+        #expect(map.shadowAlpha(at: 0.05, dayFraction: 0.5, visibleFraction: visible) > 0.75)
+        var previous = map.shadowAlpha(at: 0, dayFraction: 0.5, visibleFraction: visible)
+        for step in 1...1000 {
+            let next = map.shadowAlpha(at: Double(step) / 1000, dayFraction: 0.5, visibleFraction: visible)
+            #expect(abs(next - previous) < 0.012)
+            previous = next
+        }
+        for boundary in [0.0, 0.5, 1.0] {
+            let before = map.shadowAlpha(at: boundary - 0.000001, dayFraction: 0.5, visibleFraction: visible)
+            let after = map.shadowAlpha(at: boundary + 0.000001, dayFraction: 0.5, visibleFraction: visible)
+            #expect(abs(after - before) < 0.0001)
+        }
+    }
+
     @Test func bundledArtworkHasGradualDuskAndDawn() throws {
         let map = try SkyIllumination.load()
         #expect(map.day.count == 128)
         #expect(map.night.count == 128)
-        let visible = 390.0 / (2 * 844 * 3168 / 1344)
+        let visible = 390.0 / (2 * (844 / 2) * 1584 / 672)
         var dusk = 0.0
         var dawn = 1.0
         for step in 0...100 {
@@ -27,8 +45,9 @@ struct SkyIlluminationTests {
         let light = SkyIllumination(day: [0.2, 0.8, 1, 0.8, 0.2], night: [0.1, 0.1])
         let darkAlpha = dark.shadowAlpha(at: 0.15, dayFraction: 0.5, visibleFraction: 0)
         let lightAlpha = light.shadowAlpha(at: 0.15, dayFraction: 0.5, visibleFraction: 0)
-        #expect(darkAlpha > 0.9)
-        #expect(lightAlpha < 0.2)
+        #expect(darkAlpha > lightAlpha)
+        #expect(darkAlpha < 1)
+        #expect(lightAlpha > 0)
     }
 
     @Test func dayCenterIsClearAndNightRemainsDarkEvenWithBrightNightArtwork() {

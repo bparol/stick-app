@@ -35,7 +35,12 @@ struct SkyIllumination: Decodable {
             // A flat/reversed profile has no useful daylight contrast to normalize.
             darkness = abs(p / dayFraction - 0.5) * 2
         }
-        let t = min(1, max(0, darkness))
+        // Spread dawn/dusk over the entire daylight half instead of letting a
+        // steep painted brightness ramp remove most shade in a few seconds.
+        // Artwork still shapes the curve; full day and night endpoints stay fixed.
+        let daylightDistance = abs(p - center) / center
+        let measured = min(1, max(0, darkness))
+        let t = 0.8 * daylightDistance + 0.2 * measured
         return t * t * (3 - 2 * t)
     }
 

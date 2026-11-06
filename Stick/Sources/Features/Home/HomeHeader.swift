@@ -7,8 +7,8 @@ struct HomeHeader: View {
     var body: some View {
         let tint = HomeHeaderTint(darkness: appearance.darkness)
         HStack {
-            StickWordmark(tint: tint.wordmark)
-                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+//            StickWordmark(tint: tint.wordmark)
+//                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
             Spacer(minLength: 16)
             NavigationLink(value: AppRoute.settings) {
                 Image(systemName: "gearshape")

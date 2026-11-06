@@ -1,16 +1,24 @@
 import SpriteKit
 import UIKit
 
-/// Two aspect-filled sky panels move left and alternate without allocating new nodes.
+/// Full sky images move left in the upper half, sharing textures across recycled panels.
 @MainActor
 final class MeadowScene: SKScene {
     let appearance = SkyAppearance()
-    // About two minutes per image; one complete day/night circuit takes four minutes.
-    let cycleDuration: TimeInterval = 240
+    // One complete day/night circuit takes one minute.
+    let cycleDuration: TimeInterval = 120
     private let day = SKSpriteNode(imageNamed: "sky-day.png")
     private let night = SKSpriteNode(imageNamed: "sky-night.png")
+    // Portrait uses the original pair; wide previews can need additional tiles.
+    private var extraSkies: [SKSpriteNode] = []
+    private var skyPanels: [SKSpriteNode] { [day, night] + extraSkies }
     private let landscape = SKSpriteNode(imageNamed: "landscape-transparent.png")
     private let shadow = SKSpriteNode()
+    static let characterImageNames = (1...9).map { "stick-\($0)-transparent.png" }
+    private let character = SKSpriteNode(imageNamed: characterImageNames[0])
+    private var characterElapsed: TimeInterval = 0
+    private var characterIndex = 0
+    private let characterInterval: TimeInterval = 10
     private let illumination: SkyIllumination = {
         do { return try .load() }
         catch { preconditionFailure("Missing or invalid sky illumination map: \(error)") }
@@ -44,6 +52,10 @@ final class MeadowScene: SKScene {
         shadow.name = "landscape-shadow"
         shadow.zPosition = 2
         addChild(shadow)
+        character.name = "stick-character"
+        character.zPosition = 3
+        character.anchorPoint = CGPoint(x: 0.5, y: 0)
+        addChild(character)
         layoutSky()
     }
 
@@ -63,6 +75,18 @@ final class MeadowScene: SKScene {
         self.progress = (progress + elapsed * Double(speed) / cycleDuration)
             .truncatingRemainder(dividingBy: 1)
         positionSky()
+        advanceCharacter(by: elapsed * max(0, Double(speed)))
+    }
+
+    private func advanceCharacter(by elapsed: TimeInterval) {
+        characterElapsed += elapsed
+        let steps = Int(characterElapsed / characterInterval)
+        guard steps > 0 else { return }
+        characterElapsed.formTruncatingRemainder(dividingBy: characterInterval)
+        characterIndex = (characterIndex + steps % Self.characterImageNames.count)
+            % Self.characterImageNames.count
+        character.texture = SKTexture(imageNamed: Self.characterImageNames[characterIndex])
+        layoutCharacter()
     }
 
     private func layoutLandscape() {
@@ -76,19 +100,46 @@ final class MeadowScene: SKScene {
         shadow.position = landscape.position
     }
 
+    private func layoutCharacter() {
+        guard let imageSize = character.texture?.size(), imageSize.height > 0 else { return }
+        // Match the reference's character height and foot position on the path.
+        let height = size.height * 0.35
+        character.size = CGSize(width: height * imageSize.width / imageSize.height, height: height)
+        character.position = CGPoint(x: size.width / 2, y: size.height * 0.32)
+    }
+
     private func layoutSky() {
         guard size.width > 0, size.height > 0 else { return }
         for sprite in [day, night] {
             guard let imageSize = sprite.texture?.size(),
                   imageSize.width > 0, imageSize.height > 0 else { continue }
-            let scale = max(size.width / imageSize.width, size.height / imageSize.height)
-            sprite.size = CGSize(width: imageSize.width * scale, height: imageSize.height * scale)
+            let skyHeight = size.height / 2
+            sprite.size = CGSize(width: skyHeight * imageSize.width / imageSize.height, height: skyHeight)
+        }
+        // Keep full image proportions even when a preview is wider than a panel.
+        // Extra tiles share the two existing textures and are allocated only on resize.
+        let circuitWidth = day.size.width + night.size.width
+        let pairs = max(1, Int(ceil((size.width + max(day.size.width, night.size.width)) / circuitWidth)))
+        let extraCount = (pairs - 1) * 2
+        while extraSkies.count > extraCount { extraSkies.removeLast().removeFromParent() }
+        while extraSkies.count < extraCount {
+            let index = extraSkies.count
+            let source = index.isMultiple(of: 2) ? day : night
+            let panel = SKSpriteNode(texture: source.texture)
+            panel.name = "sky-extra-\(index)"
+            panel.anchorPoint = source.anchorPoint
+            extraSkies.append(panel)
+            addChild(panel)
+        }
+        for (index, panel) in extraSkies.enumerated() {
+            panel.size = (index.isMultiple(of: 2) ? day : night).size
         }
         if progress == nil {
             progress = Double(day.size.width / (2 * (day.size.width + night.size.width)))
         }
         positionSky()
         layoutLandscape()
+        layoutCharacter()
     }
 
     private func positionSky() {
@@ -106,17 +157,20 @@ final class MeadowScene: SKScene {
         if appearance.darkness != darkness {
             appearance.darkness = darkness
         }
-        for (sprite, start) in [(day, CGFloat.zero), (night, day.size.width)] {
+        let poolWidth = CGFloat(1 + extraSkies.count / 2) * circuitWidth
+        var start = CGFloat.zero
+        for sprite in skyPanels {
             var x = size.width / 2 + start - offset
             // Recycle only after the panel's right edge clears the viewport.
             if x + sprite.size.width <= 0 {
-                x += circuitWidth
+                x += poolWidth
             } else if x >= size.width {
                 // Centered startup can place the preceding panel off to the
                 // right at the circuit seam. Keep it ready on the left instead.
-                x -= circuitWidth
+                x -= poolWidth
             }
-            sprite.position = CGPoint(x: x, y: size.height / 2)
+            sprite.position = CGPoint(x: x, y: size.height * 0.75)
+            start += sprite.size.width
         }
     }
 }

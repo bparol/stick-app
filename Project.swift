@@ -11,7 +11,7 @@ let project = Project(
             name: "Stick",
             destinations: [.iPhone],
             product: .app,
-            bundleId: "com.bparol.stick",
+            bundleId: "com.parbo.cheatah",
             deploymentTargets: .iOS("26.0"),
             infoPlist: .extendingDefault(with: [
                 "CFBundleDisplayName": "Stick",
@@ -23,8 +23,11 @@ let project = Project(
             resources: [
                 "Resources/sky-day.png", "Resources/sky-night.png",
                 "Resources/landscape-transparent.png",
+                "Resources/stick-*-transparent.png",
                 "Resources/sky-illumination.json",
-            ]
+                "Resources/Assets.xcassets",
+            ],
+            settings: .settings(base: ["ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon"])
         ),
         .target(
             name: "StickTests",
@@ -45,6 +48,32 @@ let project = Project(
             infoPlist: .default,
             sources: ["Stick/UITests/**"],
             dependencies: [.target(name: "Stick")]
+        ),
+        .target(
+            name: "StickAutomationRunner",
+            destinations: [.iPhone],
+            product: .uiTests,
+            bundleId: "com.bparol.stick.automation",
+            deploymentTargets: .iOS("26.0"),
+            infoPlist: .extendingDefault(with: [
+                "NSLocalNetworkUsageDescription": "Connect to your Mac's Stick automation bridge.",
+                "NSAppTransportSecurity": ["NSAllowsLocalNetworking": true],
+            ]),
+            sources: ["Stick/AutomationRunner/**"],
+            dependencies: [.target(name: "Stick")]
+        ),
+    ],
+    schemes: [
+        .scheme(
+            name: "Stick",
+            buildAction: .buildAction(targets: ["Stick"]),
+            testAction: .targets(["StickTests", "StickUITests"]),
+            runAction: .runAction(executable: "Stick")
+        ),
+        .scheme(
+            name: "StickAutomation",
+            buildAction: .buildAction(targets: ["Stick"]),
+            testAction: .targets(["StickAutomationRunner"])
         ),
     ]
 )
