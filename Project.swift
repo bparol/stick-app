@@ -23,7 +23,7 @@ let project = Project(
             resources: [
                 "Resources/sky-day.png", "Resources/sky-night.png",
                 "Resources/landscape-transparent.png",
-                "Resources/stick-*-transparent.png",
+                "Resources/stick-1-transparent.png", "Resources/stick-6-transparent.png",
                 "Resources/sky-illumination.json",
                 "Resources/Assets.xcassets",
             ],

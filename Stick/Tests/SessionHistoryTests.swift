@@ -148,6 +148,94 @@ struct SessionHistoryTests {
         #expect(restored.sessionDays.isEmpty)
     }
 
+    @Test func durationCorrectionsPersistWithoutChangingTimestampsOrAttribution() throws {
+        let f = try HistoryFixture("2026-11-03T23:59:00Z")
+        defer { f.clean() }
+        let model = f.model()
+        try model.addDomain(named: "Photo")
+        try model.startSession()
+        f.advance(120)
+        try model.stopSession()
+        let original = try #require(model.sessions.first)
+        for seconds in [9_000.0, 60, 0] {
+            try model.updateSessionDuration(id: original.id, duration: seconds)
+            let saved = try #require(f.model().sessions.first)
+            #expect(saved.elapsed(at: f.now) == seconds)
+            #expect(saved.fragments == original.fragments)
+            #expect(saved.completedAt == original.completedAt)
+            #expect(saved.day == "2026-11-03")
+            #expect(saved.domainID == original.domainID)
+        }
+        try model.updateSessionDuration(id: original.id, duration: 3_600)
+        // A second turn on the same attribution day includes the corrected total.
+        f.now = original.startedAt.addingTimeInterval(10)
+        try model.startSession()
+        f.advance(30)
+        #expect(try model.stopSession()?.totalSeconds == 3_630)
+    }
+
+    @Test func correctingRunningAndPausedDurationsPreservesTimingAndStatus() throws {
+        let f = try HistoryFixture()
+        defer { f.clean() }
+        let model = f.model()
+        try model.addDomain(named: "Photo")
+        try model.startSession()
+        f.advance(120)
+        let id = try #require(model.activeSession?.id)
+        try model.updateSessionDuration(id: id, duration: 60)
+        #expect(model.sessionStatus == .started)
+        f.advance(30)
+        #expect(f.model().activeSession?.elapsed(at: f.now) == 90)
+        try model.pauseSession()
+        f.advance(600)
+        try model.updateSessionDuration(id: id, duration: 7_200)
+        #expect(model.sessionStatus == .paused)
+        f.advance(600)
+        #expect(f.model().activeSession?.elapsed(at: f.now) == 7_200)
+        try model.startSession()
+        f.advance(15)
+        #expect(try model.stopSession()?.totalSeconds == 7_215)
+    }
+
+    @Test func invalidOrFailedDurationEditsLeaveTheSavedSessionUntouched() throws {
+        let f = try HistoryFixture()
+        defer { f.clean() }
+        let model = f.model()
+        try model.addDomain(named: "Photo")
+        try model.startSession()
+        f.advance(60)
+        let original = model.sessions
+        let id = try #require(model.activeSession?.id)
+        for invalid in [-1.0, .infinity, -.infinity, .nan] {
+            #expect(throws: DomainValidationError.invalidDuration) {
+                try model.updateSessionDuration(id: id, duration: invalid)
+            }
+        }
+        #expect(throws: DomainValidationError.missingSession) {
+            try model.updateSessionDuration(id: "deleted", duration: 60)
+        }
+        #expect(model.sessions == original)
+        #expect(f.model().sessions == original)
+        try FileManager.default.removeItem(at: f.store.fileURL)
+        try FileManager.default.createDirectory(at: f.store.fileURL, withIntermediateDirectories: true)
+        #expect(throws: (any Error).self) { try model.updateSessionDuration(id: id, duration: 300) }
+        #expect(model.sessions == original)
+        #expect(model.sessionStatus == .started)
+    }
+
+    @Test func snapshotsWithoutDurationAdjustmentsStillLoad() throws {
+        let f = try HistoryFixture()
+        defer { f.clean() }
+        let model = f.model()
+        try model.addDomain(named: "Photo")
+        try model.startSession()
+        f.advance(90)
+        try model.pauseSession()
+        let data = try Data(contentsOf: f.store.fileURL)
+        #expect(!String(decoding: data, as: UTF8.self).contains("durationAdjustment"))
+        #expect(f.model().activeSession?.elapsed(at: f.now) == 90)
+    }
+
     @Test func emptyHistoryAndUnknownDeletionDoNotCreateASnapshot() throws {
         let f = try HistoryFixture()
         defer { f.clean() }

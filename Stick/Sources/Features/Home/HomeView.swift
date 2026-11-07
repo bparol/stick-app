@@ -19,6 +19,9 @@ struct HomeView: View {
             .onChange(of: isPaused, initial: true) { _, paused in
                 scene.isPaused = paused
             }
+            .onChange(of: sessionStatus, initial: true) { _, status in
+                scene.setMeditating(status == .started)
+            }
             .ignoresSafeArea()
             .accessibilityHidden(true)
             .safeAreaInset(edge: .top) {

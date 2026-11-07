@@ -1,5 +1,110 @@
 # Stick development notes
 
+## Session duration editor — 2026-11-07
+
+Confirmed request: tap the duration at the right of a Sessions history row and
+choose a replacement duration in a bottom sheet. User supplied the Sessions
+screenshot to clarify the destination; Home duration editing is outside scope.
+
+Implementation: native hours/minutes wheel pickers, Save and Cancel; swipe to
+dismiss discards the draft. Sheet supports medium/large heights and uses large
+at accessibility text sizes. Editable for running, paused, and completed sessions.
+Minute precision, zero allowed, hours normally 0–999 (preserve larger existing
+hour values). These range/precision details are implementation choices.
+
+Persist an optional durationAdjustment alongside original fragments. Save sets
+the exact chosen duration at save time; running sessions keep counting afterward.
+Original start/pause/completion timestamps, original day, cursor, and status stay
+intact. Totals use the corrected elapsed value; old snapshots without the new
+field still load. Persist before publishing. Failed saves keep the draft open.
+Invalid/negative/nonfinite inputs and deleted sessions are rejected by the model.
+The trailing duration remains independently accessible while row delete/edit
+controls remain available. Clear stale Home summary when a correction succeeds.
+
+Validation complete: Tuist generation, all 61 app unit tests, both focused UI
+scenarios, and 12 practice Swift tests pass. Results:
+`/tmp/stick-duration-tests.xcresult` on iPhone SE (3rd generation), iOS 26.3.1
+Simulator. Unit tests cover corrections upward/downward/zero, original timestamps
+and attribution, totals, running/paused continuation, relaunch, old snapshots,
+invalid input, deleted IDs, and failed writes. UI tests cover picker Save/Cancel,
+restoration, Stop totals, and existing history deletion. Visually inspected the
+bottom sheet with two wheels and the updated 01:30 row in exported screenshots
+under `/tmp/stick-duration-attachments`. Whitespace checks pass. No physical-device
+or performance claim. Accessibility-size sheet appearance has not been inspected.
+
+Review and learning explanation pending. Learning prompt: why store a duration
+correction instead of changing timestamps, and what happens to a running timer
+when a correction cannot be saved? No commits, merges, pushes, or hub-file writes.
+
+Primary sources: [Apple wheel picker](https://developer.apple.com/documentation/swiftui/pickerstyle/wheel),
+[Apple sheet detents](https://developer.apple.com/documentation/swiftui/view/presentationdetents(_:)).
+
+## Session poses and meditation shadow — 2026-11-07
+
+Confirmed request: add a shadow beneath the meditating character and switch
+between meditation for a started session and stick-1 when not started.
+Interpretation: `.started` (running) shows meditation; `.waiting` and `.paused`
+show stick-1. This replaces the earlier fixed-meditation presentation, with no
+timed cycling. The earlier title shrinking change remains.
+
+HomeView derives a presentation Boolean from session status and sends it to
+MeadowScene on initial appearance and status changes, including restored running
+sessions. Session state and persistence remain outside SpriteKit. Both character
+textures are retained; switching updates the existing node and preserves sky
+progress. A soft black radial-gradient ellipse is generated once per scene and
+rendered above landscape shading, below the meditation character. Its size and
+position follow the character on resize, including the cutout's bottom margin;
+it is hidden for the standing pose. Tuist bundles only stick-1 and stick-6.
+
+Validation: Tuist generation, 12 practice Swift tests, all 57 app unit tests,
+and the Start/Pause/Continue/Stop/relaunch UI scenario pass on compact iPhone SE
+(3rd generation), iOS 26.3.1 Simulator. Results:
+`/tmp/stick-session-poses-tests.xcresult`; screenshots exported under
+`/tmp/stick-session-poses-attachments`. Visually checked waiting stick-1 and the
+running meditation pose with a soft oval shadow. No physical-device or
+performance claim. Existing uncommitted title/scene work is preserved.
+
+Implementation review and learning explanation pending. Learning prompt: why
+must pose synchronization run on initial appearance as well as status changes,
+and what would a restored running session show if the initial update were absent?
+No commits, merges, pushes, or hub-file changes.
+
+Primary sources: [Apple onChange](https://developer.apple.com/documentation/swiftui/view/onchange(of:initial:_:)),
+[Apple radial gradient](https://developer.apple.com/documentation/coregraphics/cgcontext/drawradialgradient(_:startcenter:startradius:endcenter:endradius:options:)).
+
+## Shrinking topic title and fixed meditation pose — 2026-11-07
+
+Confirmed request: shrink the Home topic title when space is insufficient and
+stop cycling character poses; show only the meditation artwork. The existing
+two-line title limit remains. Implementation choice: allow 42-point text to
+shrink to 21 points (`minimumScaleFactor(0.5)`); exceptionally long titles can
+still truncate at that floor. This preserves a readable minimum size.
+
+MeadowScene now loads only `stick-6-transparent.png`, visually identified as the
+seated meditation pose. Remove character interval/index state and texture
+replacement; retain sky animation and its lifecycle clock. Tuist bundles only
+that character PNG; other source artwork remains in the repository. Scene tests
+now assert that meditation texture and geometry remain fixed through long frame
+intervals and pause/resume. A compact-iPhone UI capture checks a long topic and
+Home controls. README and architecture reflect the current behavior.
+
+Validation complete: Tuist generation passes; practice `swift test` passes
+all 12 tests with scratch output in `/tmp/stick-meditation-practice-build`.
+All 56 app unit tests and two focused UI tests pass on iPhone SE (3rd generation),
+iOS 26.3.1 Simulator (`/tmp/stick-meditation-tests.xcresult`). Visual inspection
+of `/tmp/stick-meditation-attachments/D7F94ED8-02C9-4AF5-B6D5-C9491479A35F.png`
+confirms the complete long topic on two smaller lines, visible Start control,
+and meditation pose above the card. Whitespace checks pass. Initial sandboxed
+Simulator, Tuist, and screenshot export access failed; authorized retries succeeded.
+Physical-device appearance has not been checked.
+
+Review and learning explanation pending. No commits, merges, pushes, or hub
+file writes. Learning prompt: explain why the title has both a line limit and
+a minimum scale factor, and what happens when a name cannot fit even at that
+minimum size. No mastery claim.
+
+Primary source: [Apple minimumScaleFactor](https://developer.apple.com/documentation/swiftui/view/minimumscalefactor(_:)).
+
 ## Local integration approval — 2026-11-05
 
 User invoked `pp_to_base`, `pp_squash`, and `pp_to_main`, answered “shuash”

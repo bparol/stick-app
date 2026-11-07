@@ -26,6 +26,7 @@ struct DailyFocusCard: View {
                 Text(domainName)
                     .font(.system(size: 42, weight: .bold, design: .rounded))
                     .lineLimit(2)
+                    .minimumScaleFactor(0.5)
                     .truncationMode(.tail)
                     .tracking(-0.5)
                     .padding(.top, 6)

@@ -14,11 +14,13 @@ final class MeadowScene: SKScene {
     private var skyPanels: [SKSpriteNode] { [day, night] + extraSkies }
     private let landscape = SKSpriteNode(imageNamed: "landscape-transparent.png")
     private let shadow = SKSpriteNode()
-    static let characterImageNames = (1...9).map { "stick-\($0)-transparent.png" }
-    private let character = SKSpriteNode(imageNamed: characterImageNames[0])
-    private var characterElapsed: TimeInterval = 0
-    private var characterIndex = 0
-    private let characterInterval: TimeInterval = 10
+    static let standingImageName = "stick-1-transparent.png"
+    static let meditationImageName = "stick-6-transparent.png"
+    private let standingTexture = SKTexture(imageNamed: standingImageName)
+    private let meditationTexture = SKTexture(imageNamed: meditationImageName)
+    private let character = SKSpriteNode()
+    private let characterShadow = SKSpriteNode(texture: MeadowScene.makeCharacterShadowTexture())
+    private var isMeditating = false
     private let illumination: SkyIllumination = {
         do { return try .load() }
         catch { preconditionFailure("Missing or invalid sky illumination map: \(error)") }
@@ -52,6 +54,11 @@ final class MeadowScene: SKScene {
         shadow.name = "landscape-shadow"
         shadow.zPosition = 2
         addChild(shadow)
+        characterShadow.name = "character-shadow"
+        characterShadow.zPosition = 2.5
+        characterShadow.isHidden = true
+        addChild(characterShadow)
+        character.texture = standingTexture
         character.name = "stick-character"
         character.zPosition = 3
         character.anchorPoint = CGPoint(x: 0.5, y: 0)
@@ -75,18 +82,38 @@ final class MeadowScene: SKScene {
         self.progress = (progress + elapsed * Double(speed) / cycleDuration)
             .truncatingRemainder(dividingBy: 1)
         positionSky()
-        advanceCharacter(by: elapsed * max(0, Double(speed)))
     }
 
-    private func advanceCharacter(by elapsed: TimeInterval) {
-        characterElapsed += elapsed
-        let steps = Int(characterElapsed / characterInterval)
-        guard steps > 0 else { return }
-        characterElapsed.formTruncatingRemainder(dividingBy: characterInterval)
-        characterIndex = (characterIndex + steps % Self.characterImageNames.count)
-            % Self.characterImageNames.count
-        character.texture = SKTexture(imageNamed: Self.characterImageNames[characterIndex])
+    /// SwiftUI supplies the visual state; session ownership remains outside the scene.
+    func setMeditating(_ meditating: Bool) {
+        guard isMeditating != meditating else { return }
+        isMeditating = meditating
+        character.texture = meditating ? meditationTexture : standingTexture
+        characterShadow.isHidden = !meditating
         layoutCharacter()
+    }
+
+    private static func makeCharacterShadowTexture() -> SKTexture {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        format.opaque = false
+        let image = UIGraphicsImageRenderer(size: CGSize(width: 256, height: 64), format: format)
+            .image { output in
+                let context = output.cgContext
+                context.translateBy(x: 128, y: 32)
+                context.scaleBy(x: 1, y: 0.25)
+                let colors = [UIColor.black.withAlphaComponent(0.32).cgColor,
+                              UIColor.black.withAlphaComponent(0).cgColor]
+                let gradient = CGGradient(
+                    colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                    colors: colors as CFArray, locations: [0, 1]
+                )!
+                context.drawRadialGradient(
+                    gradient, startCenter: .zero, startRadius: 0,
+                    endCenter: .zero, endRadius: 128, options: []
+                )
+            }
+        return SKTexture(image: image)
     }
 
     private func layoutLandscape() {
@@ -106,6 +133,9 @@ final class MeadowScene: SKScene {
         let height = size.height * 0.35
         character.size = CGSize(width: height * imageSize.width / imageSize.height, height: height)
         character.position = CGPoint(x: size.width / 2, y: size.height * 0.32)
+        characterShadow.size = CGSize(width: height * 0.65, height: height * 0.10)
+        // The meditation cutout has a small transparent margin below its feet.
+        characterShadow.position = CGPoint(x: character.position.x, y: character.position.y + height * 0.05)
     }
 
     private func layoutSky() {

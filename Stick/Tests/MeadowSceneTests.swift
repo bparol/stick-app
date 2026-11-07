@@ -8,7 +8,7 @@ struct MeadowSceneTests {
     @Test func characterLoadsAboveLandscapeAtTheDesignPosition() throws {
         let scene = MeadowScene()
         let character = try #require(scene.childNode(withName: "stick-character") as? SKSpriteNode)
-        let artwork = try #require(UIImage(named: MeadowScene.characterImageNames[0]))
+        let artwork = try #require(UIImage(named: MeadowScene.standingImageName))
         let shadow = try #require(scene.childNode(withName: "landscape-shadow"))
         #expect(artwork.size.height > 100)
         #expect(character.texture != nil)
@@ -42,54 +42,63 @@ struct MeadowSceneTests {
         #expect(character.frame == resizedFrame)
     }
 
-    @Test func charactersRotateEveryTenSecondsInOrderAndWrap() throws {
+    @Test func meditationPoseStaysFixedAcrossUpdatesAndPause() throws {
         let scene = MeadowScene()
+        scene.setMeditating(true)
         let character = try #require(scene.childNode(withName: "stick-character") as? SKSpriteNode)
-        #expect(MeadowScene.characterImageNames.count == 9)
-        let firstTexture = character.texture
-        scene.update(0)
-        scene.update(9.99)
-        #expect(character.texture === firstTexture)
-        scene.update(10)
-        #expect(character.texture !== firstTexture)
-        for index in 1...9 {
-            scene.update(Double(index * 10))
-            let image = try #require(UIImage(named: MeadowScene.characterImageNames[index % 9]))
-            let texture = try #require(character.texture)
-            let expected = SKTexture(imageNamed: MeadowScene.characterImageNames[index % 9])
-            #expect(UIImage(cgImage: texture.cgImage()).pngData()
-                == UIImage(cgImage: expected.cgImage()).pngData())
-            #expect(texture.size() == image.size)
-            #expect(abs(character.size.width / character.size.height
-                - image.size.width / image.size.height) < 0.001)
-            #expect(abs(character.frame.minY - scene.size.height * 0.32) < 0.01)
+        let texture = try #require(character.texture)
+        let expected = SKTexture(imageNamed: "stick-6-transparent.png")
+        #expect(UIImage(cgImage: texture.cgImage()).pngData()
+            == UIImage(cgImage: expected.cgImage()).pngData())
+        let frame = character.frame
+        for time in [0.0, 9.99, 10, 20, 90, 1_000] {
+            scene.update(time)
+            #expect(character.texture === texture)
+            #expect(character.frame == frame)
         }
-        #expect(UIImage(cgImage: try #require(character.texture).cgImage()).pngData()
-            == UIImage(cgImage: try #require(firstTexture).cgImage()).pngData())
-        #expect(scene.children.count == 5)
+        scene.isPaused = true
+        scene.update(2_000)
+        scene.isPaused = false
+        scene.update(3_000)
+        scene.update(3_010)
+        #expect(character.texture === texture)
+        #expect(character.frame == frame)
+        #expect(!character.hasActions())
     }
 
-    @Test func characterPreservesPartialIntervalAcrossPauseAndHandlesLargeSteps() throws {
+    @Test func poseAndShadowFollowSessionPresentationWithoutMovingTheSky() throws {
         let scene = MeadowScene()
         let character = try #require(scene.childNode(withName: "stick-character") as? SKSpriteNode)
-        let first = character.texture
-        scene.update(0)
-        scene.update(6)
-        scene.isPaused = true
-        scene.update(500)
-        #expect(character.texture === first)
-        scene.isPaused = false
-        scene.update(1_000)
-        scene.update(1_003)
-        #expect(character.texture === first)
-        scene.update(1_004)
-        #expect(character.texture !== first)
-        scene.update(1_084) // Finish the remaining eight poses and wrap.
-        #expect(UIImage(cgImage: try #require(character.texture).cgImage()).pngData()
-            == UIImage(cgImage: try #require(first).cgImage()).pngData())
-        let wrapped = character.texture
-        scene.update(1_083) // Negative deltas must not change the pose.
-        #expect(character.texture === wrapped)
+        let shadow = try #require(scene.childNode(withName: "character-shadow") as? SKSpriteNode)
+        let landscapeShadow = try #require(scene.childNode(withName: "landscape-shadow"))
+        let (day, _) = try skies(in: scene)
+        let skyPosition = day.position
+        let standing = try #require(character.texture)
+        #expect(shadow.isHidden)
+        for _ in 0..<3 {
+            scene.setMeditating(true)
+            let meditation = try #require(character.texture)
+            #expect(meditation !== standing)
+            #expect(!shadow.isHidden)
+            #expect(shadow.texture != nil)
+            #expect(shadow.zPosition > landscapeShadow.zPosition)
+            #expect(shadow.zPosition < character.zPosition)
+            #expect(shadow.frame.width > shadow.frame.height)
+            #expect(abs(shadow.position.x - character.position.x) < 0.01)
+            #expect(shadow.frame.intersects(character.frame))
+            scene.setMeditating(true)
+            #expect(character.texture === meditation)
+            scene.setMeditating(false) // Waiting, paused, or stopped.
+            #expect(character.texture === standing)
+            #expect(shadow.isHidden)
+            #expect(day.position == skyPosition)
+        }
+        scene.setMeditating(true)
+        let texture = shadow.texture
+        scene.size = CGSize(width: 375, height: 667)
+        #expect(shadow.texture === texture)
+        #expect(abs(shadow.position.x - scene.size.width / 2) < 0.01)
+        #expect(shadow.frame.intersects(character.frame))
     }
 
     @Test func landscapeIsCenteredAtFullHeightAboveTheSky() throws {
@@ -128,7 +137,7 @@ struct MeadowSceneTests {
     @Test func startsWithTwoUpperHalfSkiesAndDayIsCentered() throws {
         let scene = MeadowScene()
         let (day, night) = try skies(in: scene)
-        #expect(scene.children.count == 5)
+        #expect(scene.children.count == 6)
         #expect(abs(day.frame.midX - scene.size.width / 2) < 0.01)
         try expectCoverage(of: scene)
         for sprite in [day, night] {
@@ -175,7 +184,7 @@ struct MeadowSceneTests {
         for time in stride(from: 1.0, through: 1_200.0, by: 7.0) {
             scene.update(time)
             try expectCoverage(of: scene)
-            #expect(scene.children.count == 5)
+            #expect(scene.children.count == 6)
         }
     }
 

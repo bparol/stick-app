@@ -4,6 +4,8 @@ struct SessionsView: View {
     let days: [SessionDayGroup]
     let domainName: (FocusSession) -> String
     let onDeleteSessions: (Set<String>) throws -> Void
+    let onUpdateDuration: (String, TimeInterval) throws -> Void
+    @State private var editingSession: FocusSession?
     @State private var saveError: String?
     @Environment(\.scenePhase) private var scenePhase
 
@@ -14,7 +16,8 @@ struct SessionsView: View {
                     ForEach(day.sessions) { session in
                         SessionHistoryRow(
                             session: session, domainName: domainName(session),
-                            isActive: scenePhase == .active
+                            isActive: scenePhase == .active,
+                            onEditDuration: { editingSession = session }
                         )
                     }
                     .onDelete { offsets in
@@ -38,6 +41,11 @@ struct SessionsView: View {
                 .accessibilityIdentifier("empty-sessions")
             }
         }
+        .sheet(item: $editingSession) { session in
+            SessionDurationEditorView(session: session) { duration in
+                try onUpdateDuration(session.id, duration)
+            }
+        }
         .navigationTitle("Sessions")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarVisibility(.visible, for: .navigationBar)
@@ -59,6 +67,7 @@ private struct SessionHistoryRow: View {
     let session: FocusSession
     let domainName: String
     let isActive: Bool
+    let onEditDuration: () -> Void
 
     private var status: String {
         if session.completedAt != nil { return "Completed" }
@@ -77,17 +86,27 @@ private struct SessionHistoryRow: View {
                 .foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)
-            if session.isRunning {
-                TimelineView(.animation(minimumInterval: 1, paused: !isActive)) { context in
-                    duration(at: context.date)
+            Button(action: onEditDuration) {
+                Group {
+                    if session.isRunning {
+                        TimelineView(.animation(minimumInterval: 1, paused: !isActive)) { context in
+                            duration(at: context.date)
+                        }
+                        .fixedSize()
+                    } else {
+                        duration(at: session.completedAt ?? session.startedAt)
+                    }
                 }
-                .fixedSize()
-            } else {
-                duration(at: session.completedAt ?? session.startedAt)
+                .frame(minWidth: 60, minHeight: 44, alignment: .trailing)
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
+            .accessibilityHint("Edit duration for \(domainName)")
+            .accessibilityIdentifier("edit-session-duration-\(session.id)")
         }
         .padding(.vertical, 4)
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(domainName)
         .accessibilityValue(status)
         .accessibilityIdentifier("session-row-\(session.id)")
     }

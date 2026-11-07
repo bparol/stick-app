@@ -154,13 +154,18 @@ The transparent landscape sits at zPosition 1 above the sky panels. Its height e
 ratio, and its center matches scene center. It is laid out on construction and
 resize; frame updates move only the sky. Project.swift bundles the landscape PNG.
 
-The static Stick character uses the bundled stick-transparent.png cutout at
-zPosition 3, above the landscape and its shading. Its height is 30% of scene
-height, with feet anchored 36% up from the bottom, matching the reference design.
-Its texture keeps its aspect ratio on resize; sky updates never move it. The
-original stick.jpeg is a source asset and is not bundled in the app.
+The Stick character uses two cached transparent textures at zPosition 3:
+`stick-6-transparent.png` for a running session and `stick-1-transparent.png`
+while waiting or paused. HomeView derives that presentation from session status
+on initial appearance and subsequent changes; the scene owns no session state.
+The character's height is 35% of scene height, anchored 32% up from the bottom.
+Its texture keeps its aspect ratio on resize. A soft radial-gradient ellipse at
+zPosition 2.5 sits below the meditation pose and above the landscape shading.
+The shadow texture is generated once per scene and reused; its geometry scales
+with the character. The shadow is hidden with the standing pose. There is no
+timed pose cycling. Tuist bundles these two character PNGs.
 
-A fourth sprite shades the landscape at zPosition 2. LandscapeShadow draws the
+A sprite shades the landscape at zPosition 2. LandscapeShadow draws the
 artwork once into a transparent image renderer, then composites a black vertical
 gradient using sourceIn. Output alpha is artwork alpha multiplied by gradient
 alpha, preserving soft edges and leaving the sky opening clear. The gradient is
@@ -221,3 +226,20 @@ Lifecycle pause behavior still needs device checks once animation exists.
 - [Simultaneous gesture](https://developer.apple.com/documentation/swiftui/view/simultaneousgesture(_:isEnabled:))
 - [Disable row movement](https://developer.apple.com/documentation/swiftui/view/movedisabled(_:))
 - [Sheet detents](https://developer.apple.com/documentation/swiftui/view/presentationdetents(_:))
+
+## Session duration corrections
+
+SessionsView presents SessionDurationEditorView from the trailing duration
+button. The sheet keeps a local hours/minutes draft and invokes AppModel only
+on Save; failed writes leave the sheet open with its draft. It uses native wheel
+pickers with medium/large sheet detents (large at accessibility text sizes).
+
+FocusSession retains an optional durationAdjustment in seconds. Elapsed time is
+the nonnegative sum of fragment time and that correction. Saving a new duration
+replaces the correction relative to fragment time at the instant of Save;
+fragments, original day, completion timestamp, and session status stay intact.
+A running fragment continues accumulating afterward. Domain/day totals use the
+same elapsed calculation. The JSON decoder accepts existing snapshots without
+the optional field. AppModel saves the updated snapshot before publishing state.
+Picker edits have minute precision, support zero, and normally offer 0–999 hours;
+existing larger hour values remain available. Unedited durations retain seconds.

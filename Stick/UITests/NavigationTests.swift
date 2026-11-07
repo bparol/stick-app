@@ -61,9 +61,24 @@ final class NavigationTests: XCTestCase {
         XCTAssertTrue(app.buttons["Reading"].exists)
     }
 
+    func testLongTopicKeepsTitleAndStartButtonInsideHome() {
+        let app = launchFreshApp()
+        let name = "Photography and creative storytelling"
+        addFirstDomain(in: app, named: name)
+        let title = app.staticTexts[name]
+        XCTAssertTrue(title.waitForExistence(timeout: 5))
+        let start = app.buttons["session-toggle"]
+        XCTAssertTrue(start.isHittable)
+        XCTAssertGreaterThanOrEqual(title.frame.minX, 0)
+        XCTAssertLessThanOrEqual(title.frame.maxX, app.frame.maxX)
+        XCTAssertLessThan(title.frame.maxY, start.frame.minY)
+        keepScreenshot(of: app, name: "Long topic with shrinking title and standing pose")
+    }
+
     func testSessionPauseResumeRelaunchAndStopToast() {
         let app = launchFreshApp()
         addFirstDomain(in: app, named: "Photography")
+        keepScreenshot(of: app, name: "Waiting standing pose")
         let toggle = app.buttons["session-toggle"]
         let stop = app.buttons["session-stop"]
         XCTAssertEqual(toggle.label, "Start")
@@ -80,6 +95,7 @@ final class NavigationTests: XCTestCase {
         app.launch()
         XCTAssertTrue(toggle.waitForExistence(timeout: 10))
         XCTAssertEqual(toggle.value as? String, "started")
+        keepScreenshot(of: app, name: "Restored running meditation pose and shadow")
         toggle.tap()
         XCTAssertEqual(toggle.label, "Continue")
         XCTAssertTrue(stop.exists)
@@ -281,6 +297,51 @@ final class NavigationTests: XCTestCase {
         app.buttons["open-settings"].tap()
         app.buttons["open-sessions"].tap()
         XCTAssertTrue(app.staticTexts["No sessions yet"].waitForExistence(timeout: 5))
+    }
+
+    func testSessionDurationPickerSavesCancelsAndPersists() {
+        let app = launchFreshApp()
+        addFirstDomain(in: app, named: "Photography")
+        app.buttons["session-toggle"].tap()
+        app.buttons["session-toggle"].tap()
+        app.buttons["open-settings"].tap()
+        app.buttons["open-sessions"].tap()
+        let duration = app.buttons.matching(NSPredicate(
+            format: "identifier BEGINSWITH 'edit-session-duration-'"
+        )).firstMatch
+        XCTAssertTrue(duration.waitForExistence(timeout: 5))
+        let original = duration.label
+        duration.tap()
+        XCTAssertTrue(app.buttons["save-session-duration"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.pickerWheels.count, 2)
+        app.pickerWheels.element(boundBy: 0).adjust(toPickerWheelValue: "2")
+        app.pickerWheels.element(boundBy: 1).adjust(toPickerWheelValue: "15")
+        keepScreenshot(of: app, name: "Session duration bottom sheet")
+        app.buttons["cancel-session-duration"].tap()
+        XCTAssertTrue(app.buttons["save-session-duration"].waitForNonExistence(timeout: 5))
+        XCTAssertEqual(duration.label, original)
+        duration.tap()
+        app.pickerWheels.element(boundBy: 0).adjust(toPickerWheelValue: "1")
+        app.pickerWheels.element(boundBy: 1).adjust(toPickerWheelValue: "30")
+        app.buttons["save-session-duration"].tap()
+        XCTAssertTrue(app.buttons["save-session-duration"].waitForNonExistence(timeout: 5))
+        XCTAssertEqual(duration.label, "01:30")
+        keepScreenshot(of: app, name: "Corrected session duration")
+        app.terminate()
+        app.launch()
+        app.buttons["open-settings"].tap()
+        app.buttons["open-sessions"].tap()
+        XCTAssertTrue(duration.waitForExistence(timeout: 5))
+        XCTAssertEqual(duration.label, "01:30")
+        duration.tap()
+        XCTAssertEqual(app.pickerWheels.element(boundBy: 0).value as? String, "1")
+        XCTAssertEqual(app.pickerWheels.element(boundBy: 1).value as? String, "30")
+        app.buttons["cancel-session-duration"].tap()
+        app.navigationBars["Sessions"].buttons.element(boundBy: 0).tap()
+        app.navigationBars["Settings"].buttons.element(boundBy: 0).tap()
+        app.buttons["session-stop"].tap()
+        XCTAssertTrue(app.staticTexts["session-total-toast"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["session-total-toast"].label.contains("01:30"))
     }
 
     private func historyRow(withStatus status: String, in app: XCUIApplication) -> XCUIElement {

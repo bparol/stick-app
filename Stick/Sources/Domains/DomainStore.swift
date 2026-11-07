@@ -52,7 +52,8 @@ struct DomainState: Codable, Equatable {
         guard unfinished.count <= 1,
               unfinished.allSatisfy({ $0.domainID == currentDomainID }) else { return false }
         return sessions.allSatisfy { session in
-            !session.fragments.isEmpty && session.fragments.enumerated().allSatisfy { index, fragment in
+            session.durationAdjustment?.isFinite != false
+                && !session.fragments.isEmpty && session.fragments.enumerated().allSatisfy { index, fragment in
                 fragment.endedAt != nil || (index == session.fragments.count - 1 && session.completedAt == nil)
             }
         }

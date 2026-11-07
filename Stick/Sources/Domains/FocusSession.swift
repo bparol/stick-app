@@ -12,11 +12,20 @@ struct FocusSession: Codable, Equatable, Identifiable, Sendable {
     let day: String
     var fragments: [SessionFragment]
     var completedAt: Date?
+    var durationAdjustment: TimeInterval? = nil
 
     var startedAt: Date { fragments[0].startedAt }
     var isRunning: Bool { completedAt == nil && fragments.last?.endedAt == nil }
 
     func elapsed(at date: Date) -> TimeInterval {
+        max(0, fragmentElapsed(at: date) + (durationAdjustment ?? 0))
+    }
+
+    mutating func setDuration(_ duration: TimeInterval, at date: Date) {
+        durationAdjustment = duration - fragmentElapsed(at: date)
+    }
+
+    private func fragmentElapsed(at date: Date) -> TimeInterval {
         fragments.reduce(0) { total, fragment in
             total + max(0, (fragment.endedAt ?? date).timeIntervalSince(fragment.startedAt))
         }

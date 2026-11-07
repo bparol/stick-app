@@ -46,6 +46,10 @@ struct AppRootView: View {
                         onDeleteSessions: { ids in
                             try model.deleteSessions(ids: ids)
                             summary = nil
+                        },
+                        onUpdateDuration: { id, duration in
+                            try model.updateSessionDuration(id: id, duration: duration)
+                            summary = nil
                         }
                     )
                 }

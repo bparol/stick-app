@@ -97,6 +97,19 @@ final class AppModel {
         domains.first { $0.id == session.domainID }?.name ?? session.domainName
     }
 
+    func updateSessionDuration(id: String, duration: TimeInterval) throws {
+        guard storeLoaded else { throw DomainValidationError.storeUnavailable }
+        guard duration.isFinite, duration >= 0 else { throw DomainValidationError.invalidDuration }
+        guard let index = sessions.firstIndex(where: { $0.id == id }) else {
+            throw DomainValidationError.missingSession
+        }
+        var updated = state
+        // Keep the original fragments and attribution; a running session keeps
+        // accumulating from this corrected total at the instant Save is pressed.
+        updated.sessions[index].setDuration(duration, at: now())
+        try persist(updated)
+    }
+
     func deleteSessions(ids: Set<String>) throws {
         guard storeLoaded else { throw DomainValidationError.storeUnavailable }
         var updated = state

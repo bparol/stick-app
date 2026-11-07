@@ -13,9 +13,10 @@ An iPhone app for making time for several interests through one focus at a time.
 
 ## Implemented functionality
 
-- Home screen with a SpriteKit meadow and nine transparent character poses.
-  Poses cycle in order every 10 seconds of active Home time and wrap after
-  the ninth pose. Navigation and inactivity pause the rotation.
+- Home screen with a SpriteKit meadow. The character meditates with a soft ground
+  shadow during a running session; waiting and paused sessions show stick-1.
+  The topic title uses at most two lines and shrinks down to half its base size
+  when space is limited.
 - An ivory first-use card with rotating examples and an outlined
   “Add your first domain” button. Examples pause while Home is covered or
   inactive; Reduce Motion uses a fade. Card fonts use fixed sizes.
@@ -57,6 +58,11 @@ An iPhone app for making time for several interests through one focus at a time.
   removing history adjusts future totals. Deletion persists across relaunch.
   Sessions retain their original domain name for display after domain deletion;
   existing domains display their current name.
+- Tap a duration in Sessions to edit its hours and minutes in a bottom sheet.
+  Save updates the session and its totals; Cancel or dismissal saves nothing.
+  Started, paused, and completed sessions can be corrected. Running sessions
+  continue counting from the saved duration; original timestamps remain intact.
+  The picker sets whole minutes and supports durations longer than 24 hours.
 - Settings screen with native Back navigation. The visual scene keeps its state
   across navigation and pauses when the app is inactive or Settings covers Home.
 

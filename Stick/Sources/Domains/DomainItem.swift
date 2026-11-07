@@ -16,9 +16,15 @@ enum DomainValidationError: LocalizedError, Equatable {
     case missingDomain
     case invalidOrder
     case sessionInProgress
+    case missingSession
+    case invalidDuration
 
     var errorDescription: String? {
         switch self {
+        case .missingSession:
+            "This session no longer exists. Close the editor and try again."
+        case .invalidDuration:
+            "Choose a duration of zero or more hours and minutes."
         case .emptyName:
             "Give your domain a name."
         case .missingDomain:
